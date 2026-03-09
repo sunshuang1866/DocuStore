@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="{{LANG}}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{TITLE}}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@700;900&family=Noto+Sans+SC:wght@400;500;700&family=Oswald:wght@500;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ── Reset ───────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #e8e6e0; display: flex; justify-content: center; padding: 40px 20px; min-height: 100vh; }
+
+    /* ── Card shell ──────────────────────────── */
+    .card {
+      width: 900px;
+      background: {{BG_COLOR}};       /* cream=#f5f3ed  white=#ffffff  dark=#1a1a1a */
+      color: {{TEXT_COLOR}};           /* light=#0a0a0a  dark=#f0f0f0 */
+      padding: 50px;
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ── Noise texture overlay ───────────────── */
+    .card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+    }
+
+    /* ── Label / tag ─────────────────────────── */
+    .label {
+      font-family: 'Oswald', 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: {{ACCENT_COLOR}};
+    }
+
+    /* ── Accent bar ──────────────────────────── */
+    .accent-bar {
+      height: 6px;
+      width: 100px;
+      background: {{ACCENT_COLOR}};
+      margin: 8px 0 16px;
+    }
+
+    /* ── LAYOUT A: Big Typography (Low density) ─ */
+    .hero-title {
+      font-family: 'Noto Serif SC', 'Oswald', serif;
+      font-size: 80px;
+      font-weight: 900;
+      line-height: 1.0;
+      letter-spacing: -0.04em;
+      color: {{TEXT_COLOR}};
+    }
+    .hero-stat {
+      font-family: 'Oswald', sans-serif;
+      font-size: 120px;
+      font-weight: 700;
+      line-height: 1.0;
+      color: {{ACCENT_COLOR}};
+      opacity: 0.12;
+      position: absolute;
+      right: 40px;
+      bottom: 30px;
+    }
+
+    /* ── LAYOUT B: Standard (Medium density) ─── */
+    .main-title {
+      font-family: 'Noto Serif SC', 'Oswald', serif;
+      font-size: 56px;
+      font-weight: 700;
+      line-height: 1.1;
+      color: {{TEXT_COLOR}};
+    }
+    .callout {
+      background: rgba(0,0,0,0.03);
+      padding: 20px 24px;
+      border-left: 4px solid {{ACCENT_COLOR}};
+    }
+
+    /* ── LAYOUT C: Multi-column Grid (High density) */
+    .sub-title {
+      font-family: 'Noto Serif SC', 'Oswald', serif;
+      font-size: 32px;
+      font-weight: 700;
+      line-height: 1.2;
+      color: {{TEXT_COLOR}};
+    }
+    .columns {
+      display: grid;
+      grid-template-columns: repeat({{COL_COUNT}}, 1fr);
+      gap: 0;
+    }
+    .column {
+      padding: 0 28px;
+      border-left: 1px solid rgba(0,0,0,0.15);
+    }
+    .column:first-child { padding-left: 0; border-left: none; }
+
+    /* ── Body text ───────────────────────────── */
+    .body {
+      font-family: 'Inter', 'Noto Sans SC', sans-serif;
+      font-size: 19px;
+      line-height: 1.6;
+      color: {{TEXT_COLOR}};
+    }
+    .support {
+      font-family: 'Inter', 'Noto Sans SC', sans-serif;
+      font-size: 15px;
+      line-height: 1.5;
+      color: {{SUPPORT_COLOR}};   /* light=#555  dark=#aaa */
+    }
+
+    /* ── Footer ──────────────────────────────── */
+    .footer {
+      border-top: 1px solid rgba(0,0,0,0.1);
+      padding-top: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+
+    <!-- ── Header ── -->
+    <div class="header">
+      <span class="label">{{CATEGORY_LABEL}}</span>
+      <div class="accent-bar"></div>
+      <!-- Replace with .hero-title (Low) or .main-title (Medium/High) -->
+      <h1 class="main-title">{{TITLE}}</h1>
+    </div>
+
+    <!-- ── Content: choose one layout ── -->
+
+    <!-- Layout A (Low density): Big Typography -->
+    <!--
+    <p class="body">{{BODY_TEXT}}</p>
+    <div class="hero-stat">{{KEY_STAT}}</div>
+    -->
+
+    <!-- Layout B (Medium density): Standard -->
+    <!--
+    <p class="body">{{BODY_TEXT}}</p>
+    <div class="callout">
+      <span class="label">Key Insight</span>
+      <p class="body">{{CALLOUT_TEXT}}</p>
+    </div>
+    -->
+
+    <!-- Layout C (High density): Multi-column Grid -->
+    <!--
+    <h2 class="sub-title">{{SUB_TITLE}}</h2>
+    <div class="columns">
+      <div class="column">
+        <span class="label">{{COL_LABEL_1}}</span>
+        <p class="body">{{COL_BODY_1}}</p>
+      </div>
+      <div class="column">
+        <span class="label">{{COL_LABEL_2}}</span>
+        <p class="body">{{COL_BODY_2}}</p>
+      </div>
+    </div>
+    -->
+
+    <!-- ── Footer ── -->
+    <div class="footer">
+      <p class="support">{{SOURCE_OR_DATE}}</p>
+    </div>
+
+  </div>
+</body>
+</html>
