@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GEO 搜索能力诊断：设计方案</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@700;900&family=Noto+Sans+SC:wght@400;500;700&family=Oswald:wght@500;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #e8e6e0; display: flex; justify-content: center; padding: 40px 20px; min-height: 100vh; }
+
+    .card {
+      width: 900px;
+      background: #f5f3ed;
+      color: #0a0a0a;
+      padding: 50px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+    }
+
+    .label {
+      font-family: 'Oswald', 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #2980b9;
+    }
+    .accent-bar {
+      height: 6px;
+      width: 100px;
+      background: #2980b9;
+      margin: 8px 0 16px;
+    }
+
+    .main-title {
+      font-family: 'Noto Serif SC', 'Oswald', serif;
+      font-size: 52px;
+      font-weight: 900;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      color: #0a0a0a;
+    }
+    .sub-title {
+      font-family: 'Noto Serif SC', 'Oswald', serif;
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1.2;
+      color: #0a0a0a;
+      margin-bottom: 4px;
+    }
+    .body {
+      font-family: 'Inter', 'Noto Sans SC', sans-serif;
+      font-size: 18px;
+      line-height: 1.6;
+      color: #1a1a1a;
+    }
+    .support {
+      font-family: 'Inter', 'Noto Sans SC', sans-serif;
+      font-size: 15px;
+      line-height: 1.5;
+      color: #555;
+    }
+
+    /* Flow section */
+    .flow-bar {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      background: rgba(0,0,0,0.03);
+      padding: 16px 20px;
+      border-radius: 4px;
+    }
+    .flow-step {
+      flex: 1;
+      text-align: center;
+      font-family: 'Inter', 'Noto Sans SC', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      color: #1a1a1a;
+      position: relative;
+    }
+    .flow-step .step-num {
+      display: block;
+      font-family: 'Oswald', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: #2980b9;
+      margin-bottom: 2px;
+    }
+    .flow-arrow {
+      font-size: 20px;
+      color: #2980b9;
+      flex-shrink: 0;
+      padding: 0 8px;
+    }
+
+    /* 3-column grid */
+    .columns-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+    }
+    .column {
+      padding: 0 24px;
+      border-left: 1px solid rgba(0,0,0,0.12);
+    }
+    .column:first-child { padding-left: 0; border-left: none; }
+
+    .column .label { display: block; margin-bottom: 10px; }
+    .column .body { font-size: 18px; }
+
+    /* Callout */
+    .callout {
+      background: rgba(0,0,0,0.03);
+      padding: 20px 24px;
+      border-left: 4px solid #2980b9;
+    }
+    .callout .label { margin-bottom: 8px; display: block; }
+
+    /* 2-column grid */
+    .columns-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0;
+    }
+
+    /* Score table */
+    .score-grid {
+      display: grid;
+      grid-template-columns: 1fr 3fr 3fr;
+      gap: 0;
+      font-family: 'Inter', 'Noto Sans SC', sans-serif;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+    .score-grid .cell {
+      padding: 10px 14px;
+      border-bottom: 1px solid rgba(0,0,0,0.08);
+      color: #1a1a1a;
+    }
+    .score-grid .cell-header {
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #555;
+      border-bottom: 2px solid rgba(0,0,0,0.15);
+      font-family: 'Oswald', sans-serif;
+    }
+    .score-grid .cell-score {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 700;
+      font-size: 18px;
+      color: #2980b9;
+    }
+
+    /* Platform badges */
+    .platform-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(41,128,185,0.08);
+      border: 1px solid rgba(41,128,185,0.2);
+      padding: 6px 14px;
+      border-radius: 3px;
+      font-family: 'Inter', 'Noto Sans SC', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+    .badge .pct {
+      font-family: 'Oswald', sans-serif;
+      font-size: 14px;
+      color: #2980b9;
+    }
+
+    /* Phase timeline */
+    .phase-row {
+      display: flex;
+      gap: 0;
+    }
+    .phase {
+      flex: 1;
+      padding: 16px 20px;
+      border-left: 3px solid #2980b9;
+      background: rgba(0,0,0,0.02);
+    }
+    .phase:first-child { border-left: 3px solid #2980b9; }
+    .phase + .phase { margin-left: 12px; }
+    .phase .label { margin-bottom: 6px; display: block; }
+    .phase-title {
+      font-family: 'Noto Serif SC', serif;
+      font-size: 19px;
+      font-weight: 700;
+      color: #0a0a0a;
+      margin-bottom: 8px;
+    }
+    .phase ul {
+      list-style: none;
+      padding: 0;
+    }
+    .phase li {
+      font-family: 'Inter', 'Noto Sans SC', sans-serif;
+      font-size: 15px;
+      line-height: 1.5;
+      color: #333;
+      padding: 2px 0;
+    }
+    .phase li::before {
+      content: '·';
+      margin-right: 6px;
+      color: #2980b9;
+      font-weight: 700;
+    }
+
+    /* Divider */
+    .divider {
+      height: 1px;
+      background: rgba(0,0,0,0.1);
+      margin: 4px 0;
+    }
+
+    /* Issues count */
+    .issues-bar {
+      display: flex;
+      gap: 20px;
+    }
+    .issue-count {
+      font-family: 'Oswald', sans-serif;
+      font-size: 36px;
+      font-weight: 700;
+      color: #2980b9;
+      line-height: 1;
+    }
+    .issue-label {
+      font-family: 'Inter', 'Noto Sans SC', sans-serif;
+      font-size: 15px;
+      color: #555;
+      margin-top: 4px;
+    }
+
+    .footer {
+      border-top: 1px solid rgba(0,0,0,0.1);
+      padding-top: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+
+    <!-- Header -->
+    <div>
+      <span class="label">GEO DIAGNOSTIC SYSTEM · 设计方案</span>
+      <div class="accent-bar"></div>
+      <h1 class="main-title">GEO 搜索能力<br>诊断方案</h1>
+    </div>
+
+    <!-- Intro -->
+    <p class="body">给定开源社区及期望搜索话题，自动完成主流 AI 平台的 GEO 搜索能力判断，并给出社区文档改进建议。</p>
+
+    <!-- 4-Step Flow -->
+    <div class="flow-bar">
+      <div class="flow-step"><span class="step-num">STEP 1</span>定义输入</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step"><span class="step-num">STEP 2</span>多平台搜索采样</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step"><span class="step-num">STEP 3</span>诊断分析</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step"><span class="step-num">STEP 4</span>改进建议输出</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- MVP Platforms -->
+    <div>
+      <span class="label">MVP 平台选择</span>
+      <div style="margin-top: 12px;"></div>
+      <div class="columns-3">
+        <div class="column">
+          <span class="label" style="color:#e74c3c;">PERPLEXITY · 35%</span>
+          <p class="body" style="margin-top:8px;">海外搜索引擎，返回引用来源，最适合内容引用分析</p>
+        </div>
+        <div class="column">
+          <span class="label" style="color:#2980b9;">CHATGPT · 40%</span>
+          <p class="body" style="margin-top:8px;">全球通用，用户基数最大，代表主流 AI 搜索行为</p>
+        </div>
+        <div class="column">
+          <span class="label" style="color:#27ae60;">DEEPSEEK · 25%</span>
+          <p class="body" style="margin-top:8px;">国内技术社区首选，代表国内开发者 AI 使用习惯</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Scoring System -->
+    <div>
+      <span class="label">评分体系 · 0–10 分制</span>
+      <div style="margin-top: 12px;"></div>
+      <div class="score-grid">
+        <div class="cell cell-header">分值</div>
+        <div class="cell cell-header">维度</div>
+        <div class="cell cell-header">评判标准</div>
+
+        <div class="cell cell-score">0–3</div>
+        <div class="cell" style="font-weight:600;">提及分</div>
+        <div class="cell">未提及 → 仅提名称 → 实质描述 → 首选推荐</div>
+
+        <div class="cell cell-score">0–3</div>
+        <div class="cell" style="font-weight:600;">引用分</div>
+        <div class="cell">无引用 → 第三方引用 → 官方非精准 → 官方精准页面</div>
+
+        <div class="cell cell-score">0–2</div>
+        <div class="cell" style="font-weight:600;">准确分</div>
+        <div class="cell">信息错误/过时 → 基本正确 → 完全准确最新</div>
+
+        <div class="cell cell-score">0–2</div>
+        <div class="cell" style="font-weight:600;">排名分</div>
+        <div class="cell">竞品之后 → 并列对比 → 首选推荐</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Keywords + Output -->
+    <div class="columns-2">
+      <div class="column">
+        <span class="label">关键词策略</span>
+        <p class="body" style="margin-top:10px;">
+          <strong>双通道采集</strong>：手动输入 + 自动提取（Issue/论坛）<br>
+          <strong>五大分类</strong>：教程 · 对比 · 故障 · 特性 · 迁移<br>
+          <strong>双语维护</strong>：中英文同步，LLM 自动互译<br>
+          <strong>更新节奏</strong>：每周增量 + 每月全量聚类
+        </p>
+      </div>
+      <div class="column">
+        <span class="label">输出形式</span>
+        <p class="body" style="margin-top:10px;">
+          <strong>监控看板</strong>：综合评分 · 平台维度 · 关键词维度<br>
+          <strong>评分等级</strong>：A(80+) · B(60+) · C(40+) · D(20+) · F<br>
+          <strong>改进建议</strong>：P0 紧急补充 · P1 优化内容 · P2 微调<br>
+          <strong>Excel 导出</strong>：评分总览 + 改进建议两个 Sheet
+        </p>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Development Phases -->
+    <div>
+      <span class="label">开发路线</span>
+      <div style="margin-top: 12px;"></div>
+      <div class="phase-row">
+        <div class="phase">
+          <span class="label">PHASE 1 · MVP · 2–3 周</span>
+          <ul>
+            <li>关键词手动配置 (YAML)</li>
+            <li>三平台 API 采样</li>
+            <li>LLM 评分引擎</li>
+            <li>Excel 导出</li>
+          </ul>
+        </div>
+        <div class="phase">
+          <span class="label">PHASE 2 · 看板 · 2–3 周</span>
+          <ul>
+            <li>后端 REST API</li>
+            <li>前端可视化看板</li>
+            <li>PostgreSQL 持久化</li>
+            <li>趋势分析</li>
+          </ul>
+        </div>
+        <div class="phase">
+          <span class="label">PHASE 3 · 自动化 · 1–2 周</span>
+          <ul>
+            <li>Issue/论坛自动提取</li>
+            <li>每周定时任务</li>
+            <li>建议自动生成</li>
+            <li>通知推送</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Issues Summary -->
+    <div class="callout">
+      <span class="label">待讨论问题</span>
+      <div style="display:flex; gap:40px; margin-top:10px;">
+        <div>
+          <div class="issue-count">22</div>
+          <div class="issue-label">待讨论/确认项</div>
+        </div>
+        <div class="body" style="font-size:16px; color:#333;">
+          关键议题：LLM 准确率判断标准(3.1) · DeepSeek 无联网评估策略(2.5) · Issue 数据范围(1.1) · 评分 Prompt 设计(3.3) · 前端框架选型(4.1)
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p class="support">GEO 搜索能力诊断 · openEuler 社区 · 设计方案 v1.0</p>
+    </div>
+
+  </div>
+</body>
+</html>
